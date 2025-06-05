@@ -67,8 +67,8 @@ export const Wrapper = () => {
   };
 
   return (
-    <article className="w-screen min-h-screen flex">
-      <aside className="w-[300px] bg-white border-r border-gray-200 p-4 flex flex-col gap-4">
+    <article className="w-full h-screen flex overflow-hidden">
+      <aside className="w-[300px] bg-white border-r border-gray-200 p-4 flex flex-col gap-4 overflow-y-auto">
         <input
           type="text"
           placeholder="Поиск по чатам"
@@ -77,14 +77,14 @@ export const Wrapper = () => {
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
 
-        <div>
+        <div className="overflow-y-auto">
           <h2 className="text-sm text-gray-500 mb-2">Люди</h2>
           {filteredUserChats.map((chat, index) => (
             <ChatPreview key={`user-${index}`} {...chat} />
           ))}
         </div>
 
-        <div>
+        <div className="overflow-y-auto">
           <h2 className="text-sm text-gray-500 mt-4 mb-2">ИИ-ассистенты</h2>
           {filteredAiChats.map((chat, index) => (
             <ChatPreview key={`ai-${index}`} {...chat} />
@@ -107,7 +107,7 @@ export const Wrapper = () => {
         </div>
       </aside>
 
-      <main className="flex-1 bg-gray-50 p-4">
+      <main className="flex-1 bg-gray-50 p-4 overflow-hidden">
         <Outlet context={{ messages, onNewMessage: handleNewMessage }} />
       </main>
 
