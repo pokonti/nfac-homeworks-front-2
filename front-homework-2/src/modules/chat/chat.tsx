@@ -31,7 +31,7 @@ export const Chat = () => {
     if (chatId.startsWith('AI ')) {
       setIsLoading(true);
       try {
-        const aiResponse = await getGeminiResponse(text, messages[chatId] || []);
+        const aiResponse = await getGeminiResponse(text);
         
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),

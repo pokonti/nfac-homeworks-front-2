@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY || "",
 });
 
-export const getGeminiResponse = async (message: string, chatHistory: { text: string; sender: 'user' | 'other' }[]) => {
+export const getGeminiResponse = async (message: string) => {
   try {
     // console.log("Sending message to Gemini:", message);
     

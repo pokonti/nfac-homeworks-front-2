@@ -21,7 +21,7 @@ export const Wrapper = () => {
     setMessages(initialMessages);
   }, []);
 
-  const handleCreateChat = (name: string, isAI: boolean = false) => {
+  const handleCreateChat = (name: string) => {
     
     setMessages(prev => ({
       ...prev,
