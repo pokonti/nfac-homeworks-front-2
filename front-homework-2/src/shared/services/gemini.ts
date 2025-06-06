@@ -21,3 +21,4 @@ export const getGeminiResponse = async (message: string) => {
     throw error;
   }
 };
+

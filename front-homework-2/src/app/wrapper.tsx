@@ -8,28 +8,77 @@ export const Wrapper = () => {
   const [messages, setMessages] = useState<ChatMessages>({});
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isNewAIChatModalOpen, setIsNewAIChatModalOpen] = useState(false);
+  const [chats, setChats] = useState<ChatPreviewData[]>([]);
   const navigate = useNavigate();
 
   // Initialize with some default chats
   useEffect(() => {
-    const initialMessages: ChatMessages = {
-      "Анна": [],
-      "Игорь": [],
-      "AI Coach": [],
-      "AI Psychologist": []
-    };
-    setMessages(initialMessages);
+    const storedMessages = localStorage.getItem("chatMessages");
+    const storedChats = localStorage.getItem("chatList");
+  
+    if (storedMessages) {
+      const parsed: ChatMessages = JSON.parse(storedMessages);
+  
+      // Convert timestamps back to Date objects
+      Object.keys(parsed).forEach(chatId => {
+        parsed[chatId] = parsed[chatId].map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+      });
+  
+      setMessages(parsed);
+    } else {
+      const initialMessages: ChatMessages = {
+        "Анна": [],
+        "Игорь": [],
+        "AI Coach": [],
+        "AI Psychologist": []
+      };
+      setMessages(initialMessages);
+      localStorage.setItem("chatMessages", JSON.stringify(initialMessages));
+    }
+  
+    if (storedChats) {
+      setChats(JSON.parse(storedChats));
+    }
   }, []);
 
-  const handleCreateChat = (name: string) => {
-    
-    setMessages(prev => ({
-      ...prev,
-      [name]: []
-    }));
+  const handleCreateChat = (name: string, isAI: boolean = false) => {
+    setMessages(prev => {
+      const updated = {
+        ...prev,
+        [name]: []
+      };
+      localStorage.setItem("chatMessages", JSON.stringify(updated));
+      return updated;
+    });
 
-    // Navigate to the new chat
+    const newChat: ChatPreviewData = {
+      name,
+      message: "Новый чат создан",
+      unread: false,
+      isAI,
+    };
+
+    setChats(prev => {
+      const updated = [...prev, newChat];
+      localStorage.setItem("chatList", JSON.stringify(updated));
+      return updated;
+    });
+
     navigate(`/chat/${encodeURIComponent(name)}`);
+  };
+
+  const handleNewMessage = (chatId: string, message: Message) => {
+    setMessages(prev => {
+      const updated = {
+        ...prev,
+        [chatId]: [...(prev[chatId] || []), message]
+      };
+      localStorage.setItem("chatMessages", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const userChats: ChatPreviewData[] = Object.entries(messages)
@@ -39,7 +88,7 @@ export const Wrapper = () => {
       message: msgs.length ? msgs[msgs.length - 1].text : "Нет сообщений",
       unread: false
     }));
-  
+
   const aiChats: ChatPreviewData[] = Object.entries(messages)
     .filter(([name]) => name.startsWith('AI '))
     .map(([name, msgs]) => ({
@@ -49,26 +98,20 @@ export const Wrapper = () => {
       isAI: true
     }));
 
-  const filteredUserChats = userChats.filter(chat => 
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.message.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredAiChats = aiChats.filter(chat => 
+  const filteredUserChats = userChats.filter(chat =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.message.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleNewMessage = (chatId: string, message: Message) => {
-    setMessages(prev => ({
-      ...prev,
-      [chatId]: [...(prev[chatId] || []), message]
-    }));
-  };
+  const filteredAiChats = aiChats.filter(chat =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.message.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
 
   return (
-    <article className="w-full h-screen flex overflow-hidden">
-      <aside className="w-[300px] bg-white border-r border-gray-200 p-4 flex flex-col gap-4 overflow-y-auto">
+    <article className="w-screen min-h-screen flex">
+      <aside className="w-[300px] bg-white border-r border-gray-200 p-4 flex flex-col gap-4">
         <input
           type="text"
           placeholder="Поиск по чатам"
@@ -77,14 +120,14 @@ export const Wrapper = () => {
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
 
-        <div className="overflow-y-auto">
+        <div>
           <h2 className="text-sm text-gray-500 mb-2">Люди</h2>
           {filteredUserChats.map((chat, index) => (
             <ChatPreview key={`user-${index}`} {...chat} />
           ))}
         </div>
 
-        <div className="overflow-y-auto">
+        <div>
           <h2 className="text-sm text-gray-500 mt-4 mb-2">ИИ-ассистенты</h2>
           {filteredAiChats.map((chat, index) => (
             <ChatPreview key={`ai-${index}`} {...chat} />
@@ -92,13 +135,13 @@ export const Wrapper = () => {
         </div>
 
         <div className="mt-auto flex flex-col gap-2">
-          <button 
+          <button
             onClick={() => setIsNewChatModalOpen(true)}
             className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
           >
             Новый чат
           </button>
-          <button 
+          <button
             onClick={() => setIsNewAIChatModalOpen(true)}
             className="bg-green-500 text-white py-2 rounded hover:bg-green-600"
           >
@@ -107,7 +150,7 @@ export const Wrapper = () => {
         </div>
       </aside>
 
-      <main className="flex-1 bg-gray-50 p-4 overflow-hidden">
+      <main className="flex-1 bg-gray-50 p-4">
         <Outlet context={{ messages, onNewMessage: handleNewMessage }} />
       </main>
 
@@ -119,14 +162,14 @@ export const Wrapper = () => {
       <NewChatModal
         isOpen={isNewAIChatModalOpen}
         onClose={() => setIsNewAIChatModalOpen(false)}
-        onCreateChat={(name) => handleCreateChat(`AI ${name}`)}
+        onCreateChat={(name) => handleCreateChat(`AI ${name}`, true)}
         isAI={true}
       />
-
-     
     </article>
   );
-};// ChatPreview component
+};
+
+// ChatPreview component
 const ChatPreview = ({ name, message, unread }: ChatPreviewData) => (
   <NavLink
     to={`/chat/${encodeURIComponent(name)}`}
@@ -139,4 +182,3 @@ const ChatPreview = ({ name, message, unread }: ChatPreviewData) => (
     <p className="text-sm text-gray-600 truncate">{message}</p>
   </NavLink>
 );
-

@@ -10,8 +10,12 @@ export const MessageInput = ({ onSendMessage, isLoading = false }: MessageInputP
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
+  const isSendButtonDisabled = () => {
+    return !message.trim() || isLoading;
+  };
+
   const handleSubmit = () => {
-    if (message.trim() && !isLoading) {
+    if (!isSendButtonDisabled()) {
       onSendMessage(message.trim());
       setMessage("");
       setFile(null);
@@ -83,8 +87,7 @@ export const MessageInput = ({ onSendMessage, isLoading = false }: MessageInputP
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isLoading ? "AI is typing..." : "Type a message..."}
-            disabled={isLoading}
+            placeholder="Type a message..."
             className="flex-1 resize-none px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-[120px]"
             rows={1}
           />
@@ -92,17 +95,10 @@ export const MessageInput = ({ onSendMessage, isLoading = false }: MessageInputP
           {/* Send button */}
           <button
             type="submit"
-            disabled={!message.trim() || isLoading}
+            disabled={isSendButtonDisabled()}
             className="px-6 py-3 bg-blue-500 text-white rounded-2xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors relative"
           >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Sending...</span>
-              </div>
-            ) : (
-              "Send"
-            )}
+            Send
           </button>
         </div>
       </form>

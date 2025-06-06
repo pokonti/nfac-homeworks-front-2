@@ -1,9 +1,9 @@
 import { useParams, useOutletContext } from "react-router";
-import { useState } from "react";
 import { MessageInput } from "../messages/message-input";
 import { MessageList } from "../messages/message-list";
 import type { Message, ChatMessages } from "../../shared/model/types";
 import { getGeminiResponse } from "../../shared/services/gemini";
+import { useMutation } from '@tanstack/react-query';
 
 interface ChatContext {
   messages: ChatMessages;
@@ -13,39 +13,41 @@ interface ChatContext {
 export const Chat = () => {
   const { chatId } = useParams();
   const { messages, onNewMessage } = useOutletContext<ChatContext>();
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: fetchAIResponse, isPending: isLoading } = useMutation({
+    mutationFn: getGeminiResponse,
+    onSuccess: (aiText) => {
+      if (!chatId) return;
 
-  const handleSendMessage = async (text: string) => {
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: aiText || "Sorry, I couldn't generate a response.",
+        sender: "other",
+        timestamp: new Date(),
+      };
+
+      onNewMessage(chatId, aiMessage);
+    },
+    onError: (error) => {
+      console.error("AI fetch error:", error);
+    },
+  });
+
+
+  const handleSendMessage = (text: string) => {
     if (!chatId) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
-      sender: 'user',
+      sender: "user",
       timestamp: new Date(),
     };
 
     onNewMessage(chatId, newMessage);
 
-    // If this is an AI chat, get a response
-    if (chatId.startsWith('AI ')) {
-      setIsLoading(true);
-      try {
-        const aiResponse = await getGeminiResponse(text);
-        
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: aiResponse || "Sorry, I couldn't generate a response.",
-          sender: 'other',
-          timestamp: new Date(),
-        };
-
-        onNewMessage(chatId, aiMessage);
-      } catch (error) {
-        console.error('Error getting AI response:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    // If this is an AI chat, fetch AI response
+    if (chatId.startsWith("AI ")) {
+      fetchAIResponse(text);
     }
   };
 
@@ -65,7 +67,7 @@ export const Chat = () => {
       <div className="flex-1 overflow-hidden bg-white flex flex-col">
         {/* Scrollable messages */}
         <div className="flex-1 overflow-y-auto p-4">
-          <MessageList messages={messages[chatId || ""] || []} />
+          <MessageList messages={messages[chatId || ""] || []} isLoading={isLoading} />
         </div>
 
         {/* Fixed message input */}
